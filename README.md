@@ -1,99 +1,98 @@
-# 💊 Assignment 09: Pharmacy & Healthcare Store API with RBAC & JWT
-> **Track:** Backend Development | **Level:** Intermediate | **Estimated Time:** 6–8 Hours  
-> **Tech Stack:** Node.js, Express.js, MongoDB Atlas, Mongoose, JWT, bcryptjs, dotenv
+# 💊 Pharmacy & Healthcare Store API
 
----
+A production-grade Pharmacy Management & Medicine Ordering REST API using MongoDB Atlas and JWT-based Role-Based Access Control (RBAC).
 
-## 📌 1. Objective & Overview
+## 👨‍🎓 Student Details
 
-Build a production-grade **Pharmacy Management & Medicine Ordering REST API** using **MongoDB Atlas** and **JWT-based Role-Based Access Control (RBAC)**. Students will model multi-role user workflows across three user tiers: `Admin`, `Pharmacist`, and `Customer`, enforcing strict permission barriers for sensitive operations like adding restricted prescription medicines and approving drug orders.
+**Name:** Harsh Kumar  
+**Roll No.:** 150096725105  
+**Course:** BTech CSE  
+**Assignment:** 9 — Pharmacy & Healthcare Store API with RBAC & JWT  
 
-### Key Learning Outcomes:
-- Designing complex schema relationships with nested order subdocuments and prescription verification flags.
-- Advanced JWT authorization middleware capable of handling multi-role hierarchies.
-- MongoDB Atlas aggregation for low-stock inventory alerts and expiring medicine queries.
-- Atomic stock decrements when customer orders are marked as `approved`.
-- Secure storage of environment secrets and clean MVC layered design.
+## ✨ Features
 
----
+- **RBAC (Role-Based Access Control):** Three user tiers: `Admin`, `Pharmacist`, and `Customer`, with strict permission barriers.
+- **Inventory Management:** Adding restricted prescription medicines, querying expiring medicine, and stock alerts.
+- **Order Processing:** Customers can place orders. Pharmacists/Admins can approve or dispense orders.
+- **Atomic Stock Decrement:** Stock is automatically decremented when an order is approved.
+- **Authentication:** Secure JWT authentication and bcrypt password hashing.
 
-## 🛠️ 2. Tech Stack & Dependencies
+## 🛠️ Tech Stack
 
-```bash
-# Initialize Node.js project
-npm init -y
+- **Backend:** Node.js, Express.js
+- **Database:** MongoDB, Mongoose
+- **Authentication:** JSON Web Tokens (JWT), bcryptjs
+- **Environment:** dotenv
 
-# Install dependencies
-npm install express mongoose jsonwebtoken bcryptjs dotenv cors
+## 📁 Project Structure
 
-# Install development tools
-npm install -D nodemon
+```text
+Harsh-Assignment-9-pharmacy-Management-Api/
+├── config/
+│   └── db.js                 # MongoDB Atlas connection
+├── controllers/
+│   ├── authController.js     # JWT & password logic
+│   ├── medicineController.js # Medicine CRUD & expiring stock query
+│   └── orderController.js    # Order lifecycle & inventory deductions
+├── middleware/
+│   ├── auth.js               # Verify JWT
+│   └── roleGuard.js          # authorizeRoles('Admin', 'Pharmacist')
+├── models/
+│   ├── Medicine.js
+│   ├── Order.js
+│   └── User.js
+├── routes/
+│   ├── authRoutes.js
+│   ├── medicineRoutes.js
+│   └── orderRoutes.js
+├── .env.example
+├── .gitignore
+├── package.json
+└── server.js
 ```
 
----
+## 🚀 Getting Started
 
-## 👥 3. Role-Based Permission Matrix
+### Prerequisites
 
-| Endpoint / Action | Customer | Pharmacist | Admin |
-|---|:---:|:---:|:---:|
-| `POST /api/auth/register` (Customer) | ✅ | ❌ | ❌ |
-| `POST /api/auth/register-staff` (Admin key) | ❌ | ✅ | ✅ |
-| `GET /api/medicines` (Browse catalog) | ✅ | ✅ | ✅ |
-| `POST /api/medicines` (Add medicine) | ❌ | ✅ | ✅ |
-| `PUT /api/medicines/:id` (Update stock/price) | ❌ | ✅ | ✅ |
-| `DELETE /api/medicines/:id` (Remove drug) | ❌ | ❌ | ✅ |
-| `POST /api/orders` (Place order) | ✅ | ❌ | ❌ |
-| `PATCH /api/orders/:id/status` (Approve/Reject) | ❌ | ✅ | ✅ |
-| `GET /api/reports/expiring-soon` | ❌ | ✅ | ✅ |
+- Node.js installed
+- MongoDB installed locally or MongoDB Atlas connection string
 
----
+### Installation
 
-## 🗄️ 4. Mongoose Schemas
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/harsh4421/Harsh-Assignment-9-pharmacy-Management-Api.git
+   ```
 
-### 1. Medicine Schema (`models/Medicine.js`)
-```javascript
-const mongoose = require('mongoose');
+2. Navigate to the project directory:
+   ```bash
+   cd Harsh-Assignment-9-pharmacy-Management-Api
+   ```
 
-const medicineSchema = new mongoose.Schema({
-  name: { type: String, required: true, trim: true },
-  brand: { type: String, required: true },
-  category: { type: String, required: true }, // e.g., "Antibiotic", "Analgesic"
-  dosageForm: { type: String, enum: ['Tablet', 'Capsule', 'Syrup', 'Injection'], required: true },
-  price: { type: Number, required: true, min: 0 },
-  stockQuantity: { type: Number, required: true, min: 0 },
-  requiresPrescription: { type: Boolean, default: false },
-  expiryDate: { type: Date, required: true }
-}, { timestamps: true });
+3. Install dependencies:
+   ```bash
+   npm install
+   ```
 
-module.exports = mongoose.model('Medicine', medicineSchema);
-```
+4. Create a `.env` file based on `.env.example`:
+   ```env
+   PORT=3000
+   MONGO_URI=mongodb://localhost:27017/pharmacy-management
+   JWT_SECRET=your_super_secret_jwt_key
+   ```
 
-### 2. Order Schema (`models/Order.js`)
-```javascript
-const mongoose = require('mongoose');
+5. Start the server:
+   ```bash
+   npm start
+   ```
 
-const orderSchema = new mongoose.Schema({
-  customer: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  items: [{
-    medicine: { type: mongoose.Schema.Types.ObjectId, ref: 'Medicine', required: true },
-    quantity: { type: Number, required: true, min: 1 },
-    unitPrice: { type: Number, required: true }
-  }],
-  totalAmount: { type: Number, required: true },
-  prescriptionNotes: { type: String },
-  status: {
-    type: String,
-    enum: ['pending', 'approved', 'dispensed', 'cancelled'],
-    default: 'pending'
-  }
-}, { timestamps: true });
+   For development with nodemon:
+   ```bash
+   npm run dev
+   ```
 
-module.exports = mongoose.model('Order', orderSchema);
-```
-
----
-
-## 📋 5. API Endpoints Specification
+## 📋 API Endpoints
 
 ### 🔐 Auth Routes
 
@@ -120,63 +119,4 @@ module.exports = mongoose.model('Order', orderSchema);
 | `POST` | `/api/orders` | Customer | Place an order for medicines |
 | `GET` | `/api/orders/my-orders` | Customer | View customer order history |
 | `GET` | `/api/orders` | Pharmacist / Admin | List all pending & processed orders |
-| `PATCH` | `/api/orders/:id/status` | Pharmacist / Admin | Update status to `approved`/`dispensed` (Triggers stock deduction) |
-
----
-
-## 🏗️ 6. Project Directory Architecture
-
-```text
-assignment-09-pharmacy-api/
-├── config/
-│   └── db.js                 # MongoDB Atlas connection
-├── controllers/
-│   ├── authController.js     # JWT & password logic
-│   ├── medicineController.js # Medicine CRUD & expiring stock query
-│   └── orderController.js    # Order lifecycle & inventory deductions
-├── middleware/
-│   ├── auth.js               # Verify JWT
-│   └── roleGuard.js          # authorizeRoles('admin', 'pharmacist')
-├── models/
-│   ├── Medicine.js
-│   ├── Order.js
-│   └── User.js
-├── routes/
-│   ├── authRoutes.js
-│   ├── medicineRoutes.js
-│   └── orderRoutes.js
-├── .env.example              # MONGO_URI, JWT_SECRET, PORT
-├── .gitignore
-├── package.json
-├── server.js
-└── README.md
-```
-
----
-
-## 🧪 7. Testing & Verification Guide
-
-1. Create a customer, a pharmacist, and an admin user.
-2. Attempt to add a medicine with a customer JWT; confirm the response is `403 Forbidden`.
-3. Add a medicine using the pharmacist token.
-4. Place an order as a customer, then approve the order as a pharmacist. Verify that the medicine `stockQuantity` is automatically decremented.
-
----
-
-## 📊 8. Grading Rubric (100 Marks)
-
-| Evaluation Component | Marks |
-|---|:---:|
-| **MongoDB Atlas Setup & Schema Modeling** | 25 |
-| **JWT RBAC Middleware Hierarchy (Admin/Pharmacist/Customer)** | 25 |
-| **Medicine Inventory CRUD & Expiring Stock Filters** | 20 |
-| **Order Processing & Atomic Stock Deduction Logic** | 15 |
-| **Architecture, Error Handling & Code Quality** | 15 |
-| **Total Marks** | **100** |
-
----
-
-## 📤 9. Submission Guidelines
-
-- Submit your GitHub repository: `itm-assignment-09-pharmacy-api`.
-- Include a Postman Collection demonstrating all 3 user roles with token headers.
+| `PATCH` | `/api/orders/:id/status` | Pharmacist / Admin | Update status to `approved`/`dispensed` |
